@@ -45,14 +45,20 @@
 | 約10秒 | 243 |
 | 約15秒(公式の上限目安) | 362 |
 
-## プロンプトのコツ
+## プロンプトの書き方(MiniMax公式フォーマット)
 
-- スタイル(anime style / realistic live-action cinematic look など)を冒頭で明示する
-- 被写体・服装・動作・表情を具体的に
-- カメラワーク(orbit, dolly, close-up等)を指定すると単調な絵にならない
-- 音声(BGM、効果音、環境音)についても書くと、音付きで生成される(このモデルは映像+音声を同時生成する)
-- 禁止事項(no text, no watermark, no subtitles等)を末尾に入れると余計な文字が入りにくい
+自由な一文で書くよりも、MiniMax公式の [h3-prompt-writing](https://github.com/MiniMax-AI/MiniMax-H3/tree/main/skills/h3-prompt-writing) スキルが定める構造化フォーマットに従うと、狙ったショット数・音声が安定して出やすい。要点(詳細・具体例は `.claude/skills/minimax-h3-video/references/prompt-writing.md` を参照):
+
+```text
+integrated_multimodal_description: [Shot 1] スタイル、構図、被写体、動作、カメラワーク、セリフ等を時系列で記述...
+
+overall_soundscape: 環境音・物理音の要約(1〜4文)
+
+non_diegetic_music: 劇中人物には聞こえないBGM(1〜3文、無音ならN/A)
+```
+
+上記3つのラベルをこの順で、間に空行を挟んで1つの`prompt`文字列に連結する。ショット区切り(`[Shot 2] At 00:03.500, ...`)、カメラワークの書き方、セリフの`(S1)`+`<d>[English] ...</d>`タグ、画面内テキストの引用ルールなども `prompt-writing.md` にまとめてある。
 
 ## Reference to Video(参照画像/動画あり)を使いたい場合
 
-`MiniMaxH3ImageToVideo` の代わりに `MiniMaxH3ReferenceToVideo` ノードを使い、`minimax_h3_ref2va_pruned_int8_convrot.safetensors` をUNetLoaderで指定する。参照画像はプロンプト中で `<Picture 1>` のように参照する。詳細は `ComfyUI/comfy_extras/nodes_minimax_h3.py` のdocstringを参照。
+`MiniMaxH3ImageToVideo` の代わりに `MiniMaxH3ReferenceToVideo` ノードを使い、`minimax_h3_ref2va_pruned_int8_convrot.safetensors` をUNetLoaderで指定する。参照画像/動画/音声はプロンプト中で `<Subject N>` / `<Picture N>` / `<Video N>` / `<Audio N>` のように参照し、`subject_definitions` → `summary` → `retention_analysis` → `detailed_description` → `overall_soundscape` → `non_diegetic_music` の6セクション構成になる。詳細は `prompt-writing.md` の「Reference-to-video」節、および `ComfyUI/comfy_extras/nodes_minimax_h3.py` のdocstringを参照。

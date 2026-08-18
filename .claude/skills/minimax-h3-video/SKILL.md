@@ -31,19 +31,24 @@ or say so, don't block the conversation waiting on it.
 
 ## How to generate a video
 
-1. **Turn the user's request into a rich English prompt.** MiniMax H3 responds
-   much better to a detailed, specific description than a short one, and the
-   user's request (often short, often Japanese) needs to be expanded, not just
-   translated. Cover, in order: art style (e.g. "anime style, clean line art,
-   cel shading" vs "realistic live-action cinematic look, 35mm film, natural
-   lighting"), the subject and what they're wearing/look like, the action in
-   detail, camera work (orbit/dolly/close-up — a static camera reads as
-   lifeless), the setting/lighting, and what the audio should contain (BGM,
-   dialogue, ambient sound, sfx) since the model generates real audio, not
-   silent video. End with light negative guidance (no text, no watermark, no
-   subtitles) so stray text doesn't appear in frame. See "Prompt tips" in
-   `C:\Users\mitsuharu\ComfyUI-ROCm\generate_video.md` for more examples and
-   the reasoning behind each of these.
+1. **Turn the user's request into a structured prompt using MiniMax's own
+   format**, not a single freeform paragraph. Read
+   `references/prompt-writing.md` in this skill (condensed from MiniMax's
+   official h3-prompt-writing guide) before writing the prompt — it covers
+   the exact field structure the model was trained on:
+   `integrated_multimodal_description` (the shot-by-shot visual+audio
+   timeline — style, shots with timestamps, camera motion, speaker IDs and
+   `<d>...</d>` dialogue tags, on-screen text in quotes), then
+   `overall_soundscape`, then `non_diegetic_music`, each on its own
+   labelled section separated by a blank line. The user's request (often
+   short, often Japanese) needs to be *expanded* into this structure, not
+   just translated — invent the concrete shot/camera/sound detail the
+   format calls for rather than leaving it vague. End the description with
+   light negative guidance (no text, no watermark, no subtitles) if stray
+   on-screen text is a risk. If the request supplies a reference image
+   (`first_frame`/`last_frame`, i.e. I2VA/FL2VA/L2VA) or multiple references
+   (Ref2VA), the same reference file covers how the structure changes —
+   read it, don't guess.
 
 2. **Pick resolution and length.** Default to 864x480 (~480p, the faster and
    more reliable option) and length=124 (~5 seconds) unless the user asks for
@@ -110,8 +115,14 @@ or say so, don't block the conversation waiting on it.
   pick which of the two R9700s to use.
 - If you need to do something the script doesn't cover (reference-image/video
   conditioning via `MiniMaxH3ReferenceToVideo`, tuning the sampler, etc.),
-  read `C:\Users\mitsuharu\ComfyUI-ROCm\generate_video.md` and
-  `C:\Users\mitsuharu\ComfyUI-ROCm\ComfyUI\comfy_extras\nodes_minimax_h3.py`
-  and either edit a copy of `workflow_template.json` by hand and POST it
+  read `C:\Users\mitsuharu\ComfyUI-ROCm\generate_video.md`,
+  `references/prompt-writing.md`'s Ref2VA section, and
+  `C:\Users\mitsuharu\ComfyUI-ROCm\ComfyUI\comfy_extras\nodes_minimax_h3.py`,
+  then either edit a copy of `workflow_template.json` by hand and POST it
   directly, or extend the script — don't fight the model into doing something
   the fixed template can't express.
+- `references/prompt-writing.md` is a condensed version of MiniMax's own
+  guide, not a replacement for it — if a generated video doesn't match the
+  request and the prompt structure looks right, the official source (linked
+  at the top of that file) has more worked examples per mode than were worth
+  inlining here.
