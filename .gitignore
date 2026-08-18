@@ -1,0 +1,17 @@
+# Python virtual environment (recreate via scripts/setup.ps1)
+.venv/
+
+# ComfyUI itself: cloned fresh via scripts/setup.ps1, includes:
+#   - custom_nodes/ (ComfyUI-Manager etc.)
+#   - models/       (tens of GB of weights, re-downloaded via scripts/download_models.ps1)
+#   - output/       (generated videos/images)
+#   - user/         (local DB, logs, per-user config)
+# None of this belongs in git.
+ComfyUI/
+
+# Session logs and scratch files produced while running the setup/scripts
+*.log
+*_history.json
+*_history2.json
+__pycache__/
+*.pyc
