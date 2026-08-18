@@ -6,6 +6,21 @@
 
 > このリポジトリに **ComfyUI本体・モデルの重みファイルは含まれません**。合計100GB近くになる上、公式配布から誰でも再取得できるため、`.gitignore` で除外し、代わりに `scripts/setup.ps1` で毎回同じ構成を再現できるようにしています。
 
+## 動作要件
+
+このリポジトリのセットアップスクリプト・Claude Codeスキルは **Windows + AMD Radeon(ROCm)専用**です。手順・スクリプトがPowerShell/Windowsパス前提で書かれているため、**macOS/Linuxでは動きません**(ROCm自体はLinuxにも存在しますが、このリポジトリのスクリプト類は移植されていません)。
+
+| 項目 | 要件 |
+|---|---|
+| OS | Windows 11(64bit) |
+| GPU | ROCm対応のAMD Radeon(gfx110X / gfx120X系。例: RX 7900XTX, RX 9070XT, Radeon AI PRO R9700 等)。NVIDIA GPUは非対応(NVFP4量子化はNVIDIA専用フォーマットのため使わない設計) |
+| GPU ドライバ | 最新のAMD Adrenalinドライバ(ROCmのバージョンごとに最低要件が異なる。[SETUP.md](SETUP.md) 参照) |
+| VRAM | 実測: 32GB(text encoder単体で約26GB使用するため、16GB以下では厳しい可能性が高い) |
+| システムRAM | 32GB以上を推奨(モデルの一時展開・ページキャッシュ用) |
+| ディスク空き容量 | 約60GB以上(モデル一式で約52GB、Reference to Video込みで約70GB) |
+| ソフトウェア | Python 3.12(64bit)、git、PowerShell 5.1以降(Windows標準搭載のもので可) |
+| Claude Codeスキルを使う場合 | [Claude Code](https://claude.com/claude-code) がこのリポジトリ配下で動作していること(パスは既定で `C:\Users\mitsuharu\ComfyUI-ROCm` 前提、違う場所にcloneした場合は `COMFYUI_ROCM_ROOT` 環境変数で上書き) |
+
 ## まず読むもの
 
 | 目的 | ファイル |
