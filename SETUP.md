@@ -2,7 +2,10 @@
 
 Windows 11 + AMD Radeon GPU(ROCm対応機種)で、ComfyUIを使いローカルでMiniMax H3(Hailuo 3.0、33Bパラメータのオムニモーダル動画+音声生成モデル)を動かすための手順です。
 
-検証環境: Windows 11, AMD Radeon AI PRO R9700 (32GB) x2, Python 3.12, ROCm 7.2.1, PyTorch 2.9.1+rocm7.2.1
+検証環境: Windows 11, Python 3.12, ROCm 7.2.1, PyTorch 2.9.1+rocm7.2.1
+
+- AMD Radeon AI PRO R9700 (32GB) x2 — 主開発機
+- AMD Radeon RX 9060 XT (16GB) — 別マシンで動作確認済み。VRAMが少ない分ComfyUIが自動でオフロードを増やすため、同じ生成(1344x768・約5秒・20steps)でR9700が約5分のところ、RX 9060 XTでは約15分かかった(約3倍)
 
 このリポジトリには**モデル本体やComfyUI本体は含まれていません**(合計100GB近くになり、かつ`git clone`/公式配布から再取得できるため)。含まれているのは、それらを正しい組み合わせで揃えるための手順・スクリプトと、動画生成用の設定一式です。リポジトリ全体の構成は [README.md](README.md) を参照してください。
 

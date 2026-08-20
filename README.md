@@ -2,7 +2,12 @@
 
 ローカルのAMD Radeon GPU(ROCm)だけで、[ComfyUI](https://github.com/comfyanonymous/ComfyUI) 上で [MiniMax H3](https://huggingface.co/MiniMaxAI/MiniMax-H3)(Hailuo 3.0、33Bパラメータのオムニモーダル動画+音声生成モデル)を動かすためのセットアップ手順・スクリプト・使い方をまとめたリポジトリです。クラウドAPIやNVIDIA GPUなしで、テキスト/画像から音声付きの短い動画をローカル生成できます。
 
-検証環境: Windows 11, AMD Radeon AI PRO R9700 (32GB) x2, ROCm 7.2.1
+検証環境:
+
+| GPU | VRAM | 備考 |
+|---|---|---|
+| AMD Radeon AI PRO R9700 x2 | 32GB(x2、実際に使うのは1枚分) | 主開発機。Windows 11, ROCm 7.2.1 |
+| AMD Radeon RX 9060 XT | 16GB | 別マシンで動作確認済み。同条件で生成時間は約3倍(下記「動作要件」参照) |
 
 > このリポジトリに **ComfyUI本体・モデルの重みファイルは含まれません**。合計100GB近くになる上、公式配布から誰でも再取得できるため、`.gitignore` で除外し、代わりに `scripts/setup.ps1` で毎回同じ構成を再現できるようにしています。
 
@@ -13,9 +18,9 @@
 | 項目 | 要件 |
 |---|---|
 | OS | Windows 11(64bit) |
-| GPU | ROCm対応のAMD Radeon(gfx110X / gfx120X系。例: RX 7900XTX, RX 9070XT, Radeon AI PRO R9700 等)。NVIDIA GPUは非対応(NVFP4量子化はNVIDIA専用フォーマットのため使わない設計) |
+| GPU | ROCm対応のAMD Radeon(gfx110X / gfx120X系。例: RX 7900XTX, RX 9060XT, RX 9070XT, Radeon AI PRO R9700 等)。NVIDIA GPUは非対応(NVFP4量子化はNVIDIA専用フォーマットのため使わない設計) |
 | GPU ドライバ | 最新のAMD Adrenalinドライバ(ROCmのバージョンごとに最低要件が異なる。[SETUP.md](SETUP.md) 参照) |
-| VRAM | 実測: 32GB(text encoder単体で約26GB使用するため、16GB以下では厳しい可能性が高い) |
+| VRAM | **16GB以上**で動作確認済み。32GB(R9700)なら追加のオフロードなしで動くが、16GB(RX 9060 XT)でも動く — text encoder単体で約26GB相当あるため、16GBカードではComfyUIのメモリ管理がモデルの一部をシステムRAMとの間でオフロードしながら実行する。その分**生成時間が長くなる**(同一条件でR9700が約5分に対しRX 9060 XTは約15分、目安で3倍程度)。VRAMが少ないほど遅くなる傾向は続くと考えられるが、8GB等での動作は未検証 |
 | システムRAM | 32GB以上を推奨(モデルの一時展開・ページキャッシュ用) |
 | ディスク空き容量 | 約60GB以上(モデル一式で約52GB、Reference to Video込みで約70GB) |
 | ソフトウェア | Python 3.12(64bit)、git、PowerShell 5.1以降(Windows標準搭載のもので可) |
