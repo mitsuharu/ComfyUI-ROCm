@@ -72,7 +72,7 @@ def _launch_once():
     creationflags = 0
     if sys.platform == "win32":
         creationflags = subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP
-    subprocess.Popen(
+    return subprocess.Popen(
         [str(VENV_PYTHON), str(COMFY_MAIN)],
         cwd=str(ROOT),
         stdout=logf,
@@ -82,13 +82,30 @@ def _launch_once():
     )
 
 
-def start_server(wait_s=150, launch_attempts=3):
+def _log_tail(lines=12):
+    """Last few lines of the server log, for explaining a failed launch."""
+    try:
+        with open(SERVER_LOG, encoding="utf-8", errors="replace") as f:
+            return "".join(f.readlines()[-lines:]).rstrip()
+    except OSError:
+        return "(server log unavailable)"
+
+
+def start_server(wait_s=180, launch_attempts=3):
     """Launch ComfyUI as a detached background process and wait for it to answer.
 
-    Retries the launch itself a few times: if a previous instance just died,
-    Windows can hold the port for a moment (TIME_WAIT-style race) so the new
-    process exits immediately with "port already in use" — relaunching after
-    a short pause resolves this rather than being a real failure.
+    Retries the launch itself a few times: a launch can fail for reasons that
+    clear on a retry — Windows briefly holding port 8188 after a previous
+    instance died, or Smart App Control blocking an unsigned native extension
+    on load (see SETUP.md's known issues).
+
+    The wait loop watches the child process as well as the port, because those
+    two failure modes look completely different: a server that is merely slow
+    to start is still running and worth waiting on (loading ComfyUI plus its
+    custom nodes legitimately takes a minute or more), whereas a server that
+    already exited will never answer no matter how long we wait. Polling the
+    process means a hard startup failure is retried in seconds instead of
+    burning the full window first.
     """
     for attempt in range(1, launch_attempts + 1):
         print(
@@ -96,14 +113,22 @@ def start_server(wait_s=150, launch_attempts=3):
             f"log: {SERVER_LOG}) ...",
             file=sys.stderr,
         )
-        _launch_once()
+        proc = _launch_once()
         deadline = time.time() + wait_s
         while time.time() < deadline:
             if is_server_up():
                 print("[generate_video] server is up.", file=sys.stderr)
                 return True
+            if proc.poll() is not None:
+                print(
+                    f"[generate_video] server process exited during startup "
+                    f"(code {proc.returncode}). Last log lines:\n{_log_tail()}",
+                    file=sys.stderr,
+                )
+                break
             time.sleep(3)
-        print(f"[generate_video] no response after {wait_s}s, will retry launch ...", file=sys.stderr)
+        else:
+            print(f"[generate_video] no response after {wait_s}s, will retry launch ...", file=sys.stderr)
         time.sleep(5)
     return False
 

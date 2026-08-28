@@ -134,6 +134,31 @@ Using pytorch attention
 - **長時間生成中にサーバーが突然落ちることがある**(このセットアップの構築中に複数回発生)。原因未特定だが、Windows上のROCmスタックはまだ発展途上("the entire ROCm stack is not yet supported on Windows" と公式ドキュメントにも記載あり)であり、長時間のGPUカーネル実行に対するドライバ側のタイムアウト(TDR)が疑わしい。`.claude/skills/minimax-h3-video/scripts/generate_video.py` はこれを検知して自動でサーバーを再起動し、同じジョブを再投入する(ただし「サーバーがモデル読み込みで一時的に無応答なだけ」を誤って「クラッシュした」と判定しないよう、タイムアウトは長め・複数回確認してから再起動する作りにしてある)。手動でAPIを叩く場合も同様の考慮が要る。
 - pip installを同一venvに対して並行実行すると壊れることがある。順番に実行すること(`scripts/setup.ps1` は直列に実行する)。
 
+### Smart App Control が torchvision のネイティブ拡張をブロックする
+
+Windows 11の**スマート アプリ コントロール(Smart App Control)**が有効な環境では、ComfyUIの起動が突然失敗することがある。実際に発生した際のWindowsイベントログ(`Microsoft-Windows-CodeIntegrity/Operational`、イベントID 3077/3033)には次のように記録されていた:
+
+```
+Code Integrity determined that a process (python.exe) attempted to load
+...\.venv\Lib\site-packages\torchvision\_C.pyd
+that did not meet the Enterprise signing level requirements
+```
+
+`torchvision/_C.pyd` はPyPI/repo.radeon.comから入れたビルド済みバイナリで、Smart App Controlが要求する署名が付いていないため、ロードが拒否されることがある。ブロックされるとComfyUIの起動時に以下のエラーで落ちる:
+
+```
+RuntimeError: operator torchvision::nms does not exist
+```
+
+MiniMax H3のサンプリング自体はtorchvisionを使わないが、ComfyUIが起動時に `comfy/ldm/cosmos/model.py` 経由で `torchvision.transforms` をimportするため、**起動そのものができなくなる**。AMDの公式ドキュメントにも「Smart App Controlが有効な場合ComfyUIが起動しない可能性がある」旨の記載がある。
+
+注意点として、この事象は**毎回再現するとは限らない**。同一環境でブロックされた直後の起動が成功した例も確認している(Smart App Controlはファイルの評価結果に応じて判断するため)。したがって「たまに起動に失敗する」という形で現れることが多い。
+
+対処:
+
+- **そのまま運用する(推奨)** — `generate_video.py` はサーバープロセスの生死を監視しており、起動直後に落ちた場合は待ち時間を消費せず即座に再起動を試みる(最大3回)。実害は起動が数分遅れる程度で済む。
+- **Smart App Controlを無効にする** — 確実に解消するが、**一度オフにするとWindowsを再インストールしない限り再度オンにできない**(Microsoftの仕様)。セキュリティ機能を落とす判断になるため、実施は各自の判断で。「Windows セキュリティ」→「アプリとブラウザー制御」→「スマート アプリ コントロール」から変更できる。
+
 ## 5. 生成方法
 
 Claude Codeでこのリポジトリを開いている場合は `.claude/skills/minimax-h3-video/` が自動で使えるので、「〜な動画を作って」と頼むだけでよい。手動でAPIを直接叩く方法や、解像度/長さの目安、プロンプトのコツは [generate_video.md](generate_video.md) を参照。`examples/` に実際に生成できたワークフロー例(アニメ調・実写風)がある。

@@ -89,3 +89,4 @@ ComfyUI-ROCm/
 ## 既知の問題
 
 - 長時間の生成中にComfyUIサーバーが突然落ちることがある(Windows上のROCmスタックがまだ発展途上であることに起因すると思われるが未確定)。`generate_video.py` は自動検知・自動再起動・再投入で対処済み。詳細は [SETUP.md](SETUP.md) の「既知の問題」を参照。
+- Windows 11のスマート アプリ コントロールが有効だと、署名のない `torchvision/_C.pyd` のロードがブロックされ、ComfyUIの起動に失敗することがある(毎回ではない)。こちらも `generate_video.py` の自動リトライで復帰する。詳細と対処の選択肢は [SETUP.md](SETUP.md) の「既知の問題」を参照。
