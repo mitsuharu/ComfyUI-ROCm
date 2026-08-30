@@ -5,10 +5,10 @@
   reasoning behind each step and for troubleshooting if something here fails
   partway through (every step is safe to re-run).
 
-.PARAMETER RocmVersion
-  ROCm release to install from repo.radeon.com. Check
-  https://rocm.docs.amd.com/projects/radeon-ryzen/en/latest/docs/install/installrad/windows/install-pytorch.html
-  for the current version and required graphics driver before changing this.
+.PARAMETER TorchVersion
+  PyTorch version to pull from AMD's ROCm 10 index. The matching torchvision
+  and torchaudio versions are pinned alongside it below; changing one without
+  the others gives you a set PyTorch refuses to load.
 
 .PARAMETER SkipModels
   Skip downloading model weights (~50GB). Use this if you just want the
@@ -23,16 +23,24 @@
   .\scripts\setup.ps1 -SkipModels
 #>
 param(
-    [string]$RocmVersion = "7.2.1",
+    [string]$TorchVersion = "2.13.0+rocm10.0.0",
+    [string]$TorchvisionVersion = "0.28.0+rocm10.0.0",
+    [string]$TorchaudioVersion = "2.11.0.2+rocm10.0.0",
     [switch]$SkipModels,
     [switch]$IncludeReferenceToVideo
 )
+
+# ROCm 10 moved to a proper pip index. Installing torch from here pulls the
+# whole ROCm runtime (rocm-sdk-core, the per-architecture rocm-sdk-device-*
+# kernels, and so on) in as dependencies, which is why this script no longer
+# installs the ROCm SDK as a separate step the way the ROCm 7.2.1 setup did.
+$RocmIndex = "https://stable.repo.amd.com/rocm/whl-next/"
 
 $ErrorActionPreference = "Stop"
 $Root = Resolve-Path (Join-Path $PSScriptRoot "..")
 Set-Location $Root
 
-Write-Host "=== 1/5: Python venv ===" -ForegroundColor Cyan
+Write-Host "=== 1/4: Python venv ===" -ForegroundColor Cyan
 if (-not (Test-Path ".venv")) {
     py -3.12 -m venv .venv
 } else {
@@ -41,15 +49,17 @@ if (-not (Test-Path ".venv")) {
 $Py = Join-Path $Root ".venv\Scripts\python.exe"
 & $Py -m pip install --upgrade pip
 
-Write-Host "`n=== 2/5: ROCm SDK $RocmVersion ===" -ForegroundColor Cyan
-$RocmBase = "https://repo.radeon.com/rocm/windows/rocm-rel-$RocmVersion"
-& $Py -m pip install --no-cache-dir `
-    "$RocmBase/rocm_sdk_core-$RocmVersion-py3-none-win_amd64.whl" `
-    "$RocmBase/rocm_sdk_devel-$RocmVersion-py3-none-win_amd64.whl" `
-    "$RocmBase/rocm_sdk_libraries_custom-$RocmVersion-py3-none-win_amd64.whl" `
-    "$RocmBase/rocm-$RocmVersion.tar.gz"
+Write-Host "`n=== 2/4: ROCm PyTorch (brings the ROCm runtime with it) ===" -ForegroundColor Cyan
+# The [device-all] extra pulls the GPU-architecture kernel packages. Retries are
+# generous because this pulls several GB and AMD's CDN has dropped connections
+# mid-download here before; pip's cache lets an interrupted run resume.
+& $Py -m pip install --retries 10 --timeout 60 `
+    --index-url $RocmIndex `
+    "torch[device-all]==$TorchVersion" `
+    "torchvision[device-all]==$TorchvisionVersion" `
+    "torchaudio==$TorchaudioVersion"
 
-Write-Host "`n=== 3/5: ComfyUI checkout + dependencies ===" -ForegroundColor Cyan
+Write-Host "`n=== 3/4: ComfyUI checkout + dependencies ===" -ForegroundColor Cyan
 if (-not (Test-Path "ComfyUI")) {
     git clone https://github.com/comfyanonymous/ComfyUI.git
 } else {
@@ -65,22 +75,22 @@ if (-not (Test-Path $managerPath)) {
     Write-Host "ComfyUI-Manager already present." -ForegroundColor DarkGray
 }
 
-Write-Host "`n=== 4/5: ROCm PyTorch (installed last on purpose — step 3's requirements.txt pulls in generic torch as a dependency, and this overwrites it with the ROCm build) ===" -ForegroundColor Cyan
-& $Py -m pip install --no-cache-dir `
-    "$RocmBase/torch-2.9.1%2Brocm$RocmVersion-cp312-cp312-win_amd64.whl" `
-    "$RocmBase/torchaudio-2.9.1%2Brocm$RocmVersion-cp312-cp312-win_amd64.whl" `
-    "$RocmBase/torchvision-0.24.1%2Brocm$RocmVersion-cp312-cp312-win_amd64.whl"
-
 Write-Host "`nVerifying GPU detection:" -ForegroundColor Cyan
+# ROCm 10's version string (e.g. 2.13.0+rocm10.0.0) satisfies ComfyUI's torch
+# requirement, so step 3 leaves it alone. Under ROCm 7.2.1 it was replaced by a
+# generic build and had to be reinstalled afterwards — check the version here
+# rather than assuming that still holds after a ComfyUI upgrade.
 & $Py -c "import torch; print(f'torch {torch.__version__}, ROCm available: {torch.cuda.is_available()}, GPUs: {torch.cuda.device_count()}')"
 
 if ($SkipModels) {
-    Write-Host "`n=== 5/5: Models skipped (-SkipModels) ===" -ForegroundColor Yellow
+    Write-Host "`n=== 4/4: Models skipped (-SkipModels) ===" -ForegroundColor Yellow
 } else {
-    Write-Host "`n=== 5/5: Model weights (~50GB, this is the slow part) ===" -ForegroundColor Cyan
+    Write-Host "`n=== 4/4: Model weights (~50GB, this is the slow part) ===" -ForegroundColor Cyan
     & (Join-Path $PSScriptRoot "download_models.ps1") -IncludeReferenceToVideo:$IncludeReferenceToVideo
 }
 
 Write-Host "`nSetup complete. Start ComfyUI with:" -ForegroundColor Green
-Write-Host "  .venv\Scripts\python.exe ComfyUI\main.py" -ForegroundColor Green
+Write-Host "  .venv\Scripts\python.exe ComfyUI\main.py --disable-dynamic-vram" -ForegroundColor Green
 Write-Host "then open http://localhost:8188 — check the log for 'Device: cuda:N ... : native' to confirm GPU detection." -ForegroundColor Green
+Write-Host "`n--disable-dynamic-vram is required on ROCm 10: ComfyUI's dynamic VRAM loader" -ForegroundColor Yellow
+Write-Host "fails with 'cuMemMap ... unspecified launch failure'. See SETUP.md." -ForegroundColor Yellow
