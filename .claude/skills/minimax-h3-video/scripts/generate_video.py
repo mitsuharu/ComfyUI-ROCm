@@ -72,8 +72,12 @@ def _launch_once():
     creationflags = 0
     if sys.platform == "win32":
         creationflags = subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP
+    # --disable-dynamic-vram is required on ROCm 10: ComfyUI's dynamic VRAM
+    # loader maps memory with cuMemMap, which fails there with "unspecified
+    # launch failure" as soon as a model is loaded. Harmless on ROCm 7.2.1,
+    # which simply falls back to the same estimate-based loading path.
     return subprocess.Popen(
-        [str(VENV_PYTHON), str(COMFY_MAIN)],
+        [str(VENV_PYTHON), str(COMFY_MAIN), "--disable-dynamic-vram"],
         cwd=str(ROOT),
         stdout=logf,
         stderr=logf,
