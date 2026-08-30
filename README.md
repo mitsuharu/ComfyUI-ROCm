@@ -33,6 +33,7 @@
 | 環境をゼロから構築したい | [SETUP.md](SETUP.md) |
 | 動画生成の指示方法・プロンプトのコツ・解像度目安を知りたい | [generate_video.md](generate_video.md) |
 | 動作するワークフローの実例を見たい | [examples/](examples/)(アニメ調・実写風の2種類) |
+| このリポジトリで開発・作業する(AIエージェント含む) | [AGENTS.md](AGENTS.md) / [CLAUDE.md](CLAUDE.md) |
 
 ## クイックスタート
 
@@ -52,6 +53,8 @@ ComfyUI-ROCm/
 ├── README.md              このファイル
 ├── SETUP.md                環境構築手順(ゼロから再現する場合はここから)
 ├── generate_video.md        動画生成の指示方法・パラメータの決め方
+├── AGENTS.md                開発規約(構築中に踏んだ失敗と、その結果採用した判断)
+├── CLAUDE.md                Claude Code向けの入口。AGENTS.mdを参照する
 ├── workflow_template.json   動作確認済みのComfyUI APIワークフロー(GGUFではなくnative int8_convrot量子化を使用)
 ├── examples/                 生成に成功した実例ワークフロー(anime_dance.json / realistic_dance.json)
 ├── scripts/
