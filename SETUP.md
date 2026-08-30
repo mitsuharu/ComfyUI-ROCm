@@ -197,6 +197,8 @@ ROCm 10.0.0 への移行で変わった点。ROCm 7.2.1 の手順を知ってい
 | 起動オプション | 不要 | **`--disable-dynamic-vram` が必要**(付けないと `cuMemMap` で失敗) |
 | Smart App Control | 影響は断続的(`torchvision/_C.pyd`、リトライで回避可能) | **致命的**(`torch/lib/dl.dll` が確定的にブロックされ、torchのimport不可)。無効化が必要 |
 | ログ上のROCmバージョン | `ROCm version: (7, 2)` | `ROCm version: (7, 15)`(HIPランタイムのバージョンであり、10とは表示されない) |
+| 生成速度(R9700・864x480・124フレーム・20steps) | 322秒 | **280秒**(約13%短縮) |
+| ComfyUIの起動時間 | 40〜60秒 | 15秒程度 |
 
 ROCm 7.2.1 に戻したい場合は、`.venv` を作り直して [git履歴](https://github.com/mitsuharu/ComfyUI-ROCm/commits/master/scripts/setup.ps1) の該当バージョンの `setup.ps1` を使う。モデルファイル(`ComfyUI/models/`)はそのまま流用できる。
 
