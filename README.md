@@ -6,8 +6,8 @@
 
 | GPU | VRAM | 備考 |
 |---|---|---|
-| AMD Radeon AI PRO R9700 x2 | 32GB(x2、実際に使うのは1枚分) | 主開発機。Windows 11, ROCm 7.2.1 |
-| AMD Radeon RX 9060 XT | 16GB | 別マシンで動作確認済み。同条件で生成時間は約3倍(下記「動作要件」参照) |
+| AMD Radeon AI PRO R9700 x2 | 32GB(x2、実際に使うのは1枚分) | 主開発機。Windows 11, ROCm 10.0.0 |
+| AMD Radeon RX 9060 XT | 16GB | 別マシンで動作確認済み(ROCm 7.2.1時点)。同条件で生成時間は約3倍(下記「動作要件」参照) |
 
 > このリポジトリに **ComfyUI本体・モデルの重みファイルは含まれません**。合計100GB近くになる上、公式配布から誰でも再取得できるため、`.gitignore` で除外し、代わりに `scripts/setup.ps1` で毎回同じ構成を再現できるようにしています。
 
@@ -41,10 +41,12 @@
 git clone <このリポジトリのURL> ComfyUI-ROCm
 cd ComfyUI-ROCm
 .\scripts\setup.ps1
-.\.venv\Scripts\python.exe ComfyUI\main.py
+.\.venv\Scripts\python.exe ComfyUI\main.py --disable-dynamic-vram
 ```
 
 ブラウザで `http://localhost:8188` を開けば使える。詳細・トラブルシューティングは [SETUP.md](SETUP.md) を参照。
+
+> **ROCm 10 を使う場合、Windows のスマート アプリ コントロールを無効にする必要があります。** 有効なままだと `torch/lib/dl.dll` のロードがブロックされ、torchのimport自体ができません。詳細は [SETUP.md](SETUP.md) の「既知の問題」を参照。
 
 ## リポジトリ構成
 
@@ -92,4 +94,5 @@ ComfyUI-ROCm/
 ## 既知の問題
 
 - 長時間の生成中にComfyUIサーバーが突然落ちることがある(Windows上のROCmスタックがまだ発展途上であることに起因すると思われるが未確定)。`generate_video.py` は自動検知・自動再起動・再投入で対処済み。詳細は [SETUP.md](SETUP.md) の「既知の問題」を参照。
-- Windows 11のスマート アプリ コントロールが有効だと、署名のない `torchvision/_C.pyd` のロードがブロックされ、ComfyUIの起動に失敗することがある(毎回ではない)。こちらも `generate_video.py` の自動リトライで復帰する。詳細と対処の選択肢は [SETUP.md](SETUP.md) の「既知の問題」を参照。
+- **ROCm 10 では起動時に `--disable-dynamic-vram` が必須**。付けないとComfyUIの動的VRAMローディングが `cuMemMap` で失敗し、生成できない。
+- **ROCm 10 ではWindowsのスマート アプリ コントロールを無効にする必要がある**。有効だと `torch/lib/dl.dll` が確定的にブロックされ、torchのimportができない。Defenderの除外設定では解消しない(別系統の仕組みのため)。ROCm 7.2.1 ではブロックが断続的で、`generate_video.py` の自動リトライで回避できていた。
