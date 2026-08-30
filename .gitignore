@@ -1,5 +1,7 @@
-# Python virtual environment (recreate via scripts/setup.ps1)
-.venv/
+# Python virtual environments (recreate via scripts/setup.ps1).
+# The glob also covers side-by-side variants kept while migrating between
+# ROCm versions, e.g. .venv-rocm7-backup/ retained as a rollback.
+.venv*/
 
 # ComfyUI itself: cloned fresh via scripts/setup.ps1, includes:
 #   - custom_nodes/ (ComfyUI-Manager etc.)
